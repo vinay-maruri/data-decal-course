@@ -1,0 +1,2 @@
+Please make sure you have the following packages to run this notebook:
+numpy, seaborn, pandas, matplotlib, plotly, folium, nltk, wordcloud, scipy

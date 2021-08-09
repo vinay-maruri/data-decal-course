@@ -1,0 +1,83 @@
+---
+title: "stat135_hw3"
+author: "Vinay Maruri"
+date: "7/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#PROBLEM 4 CODE start
+
+```{r}
+samples <- c(-1.398, 8.061, 13.609, 4.325, 12.140, -4.611, 6.669, 4.340, 1.776, 7.355, -3.100, -3.784, 9.962, -4.150)
+s_2 <- var(samples)
+sigma_2 <- var(samples) * ((length(samples) - 1)/(length(samples)))
+s_2
+sigma_2
+mean(samples)
+```
+
+
+```{r}
+alpha = 0.01
+qt(p=alpha/2, df = 13, lower.tail = FALSE)
+```
+
+```{r}
+qchisq(p = alpha/2, df = 13, lower.tail = FALSE)
+qchisq(p = 1 - alpha/2, df = 13, lower.tail = FALSE)
+```
+
+#PROBLEM 4 CODE end
+
+#PROBLEM 7 (3) CODE start
+
+```{r}
+#compute LRT statistic
+X13 = c(1.059, 2.744, 0.217, 1.211, 2.325, 1.640, 0.215, 1.029, 0.660, 2.066, 1.843, 2.695, 2.086)
+Y17 = c(0.674, 0.609, 1.009, 0.482, 0.121, 0.167, 0.840, 0.049, 1.575, 0.063, 3.459, 1.653, 0.471, 0.343, 0.676, 1.672, 2.167)
+
+log_x13 <- sum(log(X13))
+log_y17 <- sum(log(Y17))
+
+lrt_stat <- log_x13 / (log_x13 + log_y17)
+lrt_stat
+```
+```{r}
+#compute beta cdf value.
+library(distributions3)
+t <- Beta(alpha = 13, beta = 17)
+cdf(t, 0.608)
+
+```
+
+#PROBLEM 7 (3) CODE end
+
+#PROBLEM 8 CODE start
+
+```{r}
+data = c(103.768, 92.295, 100.615, 102.754, 88.602,
+61.675, 88.017, 108.579, 73.003, 90.677,
+71.210, 73.154, 123.086, 84.023, 82.115,
+106.755, 91.052, 76.014, 89.222, 90.479)
+
+s_mean <- mean(data)
+#sd() and var() use 1/n-1 version or the sample formulas
+s_sd <- sd(data)
+
+s_mean
+s_sd
+```
+
+```{r}
+qt(0.01, 19)
+```
+
+```{r}
+pnorm(q=2.539483, mean = 100, sd = 66.65061237)
+```
+
+#PROBLEM 8 CODE end

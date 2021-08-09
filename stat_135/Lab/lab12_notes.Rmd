@@ -1,0 +1,306 @@
+---
+title: "Stat 135 Lab 12: One Way and Two Way ANOVA"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+urlcolor: blue
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(tidyverse)
+
+```
+
+
+## One Way Anova 
+During each of four experiments on the use of carbon tetrachloride as a worm killer, ten rats were infested with larvae (Armitage 1983). Eight days later, five rats were treated with carbon tetrachloride; the other five were kept as controls. After two more days, all the rats were killed and the numbers of worms were counted. The table below gives the counts of worms for the four control groups.
+
+### a) Create data 
+Manually type in the observations, and create a data frame with two columns - the observations and its group name.
+
+```{r}
+
+group1 <- c(279, 338, 334, 198, 303)
+group2 <- c(378, 275, 412, 265, 286)
+group3 <- c(172, 335, 335, 282, 250)
+group4 <- c(381, 346, 340, 471, 318)
+names <- rep(c('group1', 'group2', 'group3', 'group4'), each = 5)
+dat <- data.frame(Obs = c(group1, group2, group3, group4), ind = names)
+head(dat)
+
+
+# EDA ... Boxplot of each group 
+ggplot(dat, aes(x = ind, y = Obs)) + 
+  geom_boxplot() + 
+  xlab("") + ylab("Number of worms") + 
+  theme_bw()
+
+# Histogram of each group 
+# ggplot(dat, aes(x = Obs)) + 
+#   geom_histogram() + 
+#   facet_grid(~ ind)
+
+# check for normality 
+# qqnorm(dat$Obs[dat$ind == "group1"])
+
+# Variance for each group 
+# dat %>% 
+#   group_by(ind) %>% 
+#   summarise(var = var(Obs)) 
+
+```
+
+
+### b) Test for differences among the four groups 
+Use both the F test and the Kruskal-Wallis test in R to see whether there are significant differences among the four groups. Do you reach different conclusions? Which test is more approriate for this data set? 
+
+The difference between F test and the Kruskall-Wallis test has to do with the assumptions. Recall that F test assumes the following: 
+
+1. Data is normally distributed 
+2. Variance is homogenous across groups 
+3. Data are independent (within and across groups)
+
+On the other hand, Krsukall test has a more relaxed assumption. It is a nonparametric approach, meaning that the data does not need to be normally distributed. In this case, we only have five data points in each group, so it is hard to assess whether data is normally distributed. Because of this, perhaps it makes sense to use the Krsukal test. 
+
+
+```{r}
+
+# Analysis of Variance 
+fit <- aov(Obs ~ ind, data = dat)
+summary(fit)
+
+kruskal.test(Obs ~ ind, data = dat)
+
+```
+
+
+
+## Bonferroni vs Tukey 
+Previous two tests suggested that none of the pairs seem to be significantly different from each other. If there was a significant difference, a natural next step is to see which one of the pairs is significantly different from each other. One way to assess this is by constructing a confidence interval associated with the estimated difference in each pair, and see which one does or doesn't contain zero. 
+
+Q. Calculate simultaneous 95% confident intervals for all pairwise differences using both Bonferroni and Tukey’s method. Visualizes the CIs using ggplot.
+
+Recall that the Bonferroni corrected confidence intervals are given in the expression below:
+$$
+\bar{Y}_{i.} - \bar{Y}_{r.} \pm t_{n_i + n_r - 2, \frac{\alpha'}{2}} \sqrt{S_{ir}^2 \bigg(\frac{1}{n_i} + \frac{1}{n_r} \bigg)}
+$$
+where $\alpha' = 2 \alpha / (k(k-1))$
+
+Bonferroni method provides conservative confidence intervals — they provide less precise estimates but limits the probability that one or more of the confidence intervals does not contain the parameter to a maximum of 5\%. 
+
+### a) Bonferroni CI 
+```{r} 
+
+## First define a function that takes in a pair and observations
+## computes the confidence interval 
+
+
+# pair <- combn(k, 2)[, 1]
+# Observations <- dat_list
+
+get_pair_diff_CI <- function(pair, Observations, alpha = 0.05){
+  # Extract the observations for the desired groups 
+  vec1 = Observations[[pair[1]]]
+  vec2 = Observations[[pair[2]]]
+  
+  # bookkeeping
+  center1 = mean(vec1)
+  center2 = mean(vec2)
+  n1 = length(vec1)
+  n2 = length(vec2)
+  k = length(Observations); m = k*(k-1)/2
+  
+  # Get CI bounds
+  Sp2 = {(n1-1)*var(vec1) + (n2-1)*var(vec2)}/(n1+n2-2)
+  halfwidth = qt(1-(alpha/2)/m, df = n1+n2-2, lower.tail = T) * sqrt(Sp2 * (1/n1+1/n2))
+  return(c(center1-center2, 
+           center1-center2-halfwidth, 
+           center1-center2+halfwidth))
+}
+
+```
+
+
+```{r}
+
+# Apply the function to all combinations of pairs 
+k = 4 
+dat_list = list(group1, group2, group3, group4) 
+CIs = apply(combn(k, 2), 2, get_pair_diff_CI, dat_list)
+combn(k, 2)
+CIs # 3 x 6 matrix 
+
+# Create a character vector for each pair 
+# We will later use this to label our graph 
+pair_names = apply(combn(k, 2), 2, 
+      function(pair) paste0(unique(names)[pair[1]],'-', unique(names)[pair[2]]))
+
+# Combine pair names and CIs in a data frame 
+CI_df <- data.frame(lab = pair_names, Diff = CIs[1,], lower = CIs[2,], upper = CIs[3,])
+CI_df
+
+
+ggplot(CI_df, aes(x = lab, y = Diff)) + geom_point() + 
+  geom_errorbar(width = 0.1, aes(ymin = lower, ymax = upper)) +
+  geom_hline(yintercept = 0, col = 2)+
+  coord_flip()
+
+# All CIs overlap with each other, suggesting that none of the pairs are significantly different from each other. This confirms the hypothesis test results that we obtained earlier. 
+
+```
+
+
+
+### b) Tukey's HSD 
+
+Tukey's Honest Significant Difference test is another method for constructing simultaneous confidence intervals. Simultaneous $(1 - \alpha) \times 100\%$ Cis for pairwise differences are given: 
+$$
+\bar{Y}_{i.} - \bar{Y}_{r.} 
+\pm 
+q_{k, n-k}(\alpha) 
+\sqrt{MS_{W} \bigg(\frac{1}{n_i} + \frac{1}{n_r} \bigg)}
+$$
+
+```{r}
+
+posthoc <- TukeyHSD(x=fit, which = 'ind', conf.level=0.95)
+par(mar=c(5.1, 6.5, 4.1, 2.1))  # Increase left margin so that group names can show
+plot(posthoc, las = 1)
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+
+```
+
+Both Bonferroni and Tukey methods control for the family wise error rate to be at most $\alpha$. Bonferroni method tends to produce overly conservative (i.e. overly wide) CIs, and so Tukey's HSD is considered to be a preferred method for examining all possible pairwise comparisons. 
+
+
+
+
+
+## Two Way Anova 
+
+Thus far, we have worked with one way ANOVA and our goal had been to assess any significant differenct in means across multiple groups. We had one factor to consider, which was groups. Here, we consider a more complex setting. In two way ANOVA, there are two factors of interest. We want to understand how the two factors simultaneously are associated with the dependent variable. 
+
+In example 4 of Lecture 16, we saw the cloth dyeing data set under 300°C. The same manufacturer conducted another experiment under 350°C and the results are summarized in the following table. Our goal is to understand how cycle, operator, and the interaction between the two are associated with the dye score. 
+
+### a) Create data 
+Manually type in the observations, and create a data frame with three columns - the observations and its treatment levels.
+
+```{r}
+
+p <- 3
+cell_names <- expand.grid(cycle_times = c(40, 50, 60), operator = c(1,2,3))
+repeats <- rep(1:nrow(cell_names), each = p)
+Cell_names <- cell_names[repeats, ]
+Obs <- c(24, 23, 28, 37, 39, 35, 26, 29, 25, 
+         38, 36, 35, 34, 38, 36, 36, 37, 34,
+         34, 36, 39, 34, 36, 31, 28, 26, 24)
+Obs_w_names <- data.frame(cycle_times = factor(Cell_names$cycle_times),
+                      operator = factor(Cell_names$operator), Obs = Obs)
+head(Obs_w_names, 6)
+
+```
+
+
+### b) Treatment Means Plot 
+
+Examine the Treatment Means Plot to visually asess whether there are interaction effects. 
+
+The treatment means plot plots mean score against cycles, for different operators. If there is no interaction between cycles and operators, then we should see parallel lines across groups, suggesting that the effect of cycle on means is the same across groups.
+Here, the line are not parallel with each other, suggesting that the effect of cycle on means is different across groups. 
+
+```{r}
+
+Cell_means <- aggregate(Obs ~ cycle_times + operator, data = Obs_w_names, FUN = mean)
+
+# Alternative way to get the cell means 
+Obs_w_names %>% 
+  group_by(cycle_times, operator) %>% 
+  summarise(mean = mean(Obs))
+
+# Plot cell means against cycle times, for each operator 
+ggplot(data=Cell_means,  
+    aes(x=cycle_times, y=Obs, group=operator, color=operator)) +
+  geom_line(size = 0.8) + geom_point() + ylab("Cell means")
+
+```
+
+### c) Two Way ANOVA 
+Obtain the two-way ANOVA table in R. 
+
+It helps to first note that ANOVA and linear regression are mathematically identical. Both break down the variation in the data into different portions and assess the equality of the mean between them. A difference is that in ANOVA, the independent variable can only be categorical, e.g. group number. However, in linear regression, the independent variable can either be categorical or continuous. Linear regression can also have multiple independent variables, not just one or two. In a sense, linear regression is a general method and ANOVA is a special case of regression. 
+
+Here, we run a linear regression with main and interaction effects using lm function (which stands for linear model). lm function takes in mainly two arguments: formula and data. The coefficient $\beta'_{C_2}$, for example, tells us the strength of association between $C_2$ and $Y$, controlling for other variables. 
+
+$$
+Y 
+= \beta'_0 + \beta'_{C_2} C_2 + \beta'_{C_3} C_3 + \beta'_{O_2} O_2 + \beta'_{O_3} O_3 \\
++ \beta'_{2,2} C_2 O_2 + \beta'_{2,3} C_2 O_3 
++ \beta'_{3,2} C_3 O_2 + \beta'_{3,3} C_3 O_3 
++ \varepsilon' \;\; \text{... mod}
+$$
+The effect of $C_2$ on $Y$ varies depending on which operator the observation comes from. For example, if the obesrvation is in $O_1$, then $O_2$ and $O_3$ would take values 0 and the effect of $C_2$ would just be $\beta_0' + \beta'_{C_2}$. If the observation was measured in $O_2$, then the effect of $C_2$ on $Y$ would now be $\beta_0' + \beta'_{C_2} +\beta'_{O_2} + \beta'_{2,2}$. Expressing interaction terms as a product of the two variables allows us to express the effect dynamically. 
+
+Note that anova and linear regression report their results in a different way. The linear regression reports the estimated coefficients of the individual variables. On the other hand, anova reports the anova table, which contain anova-specific information like the sum of squares and F value for each grouping of variables. For this data, anova output tells us that all grouping of variables, i.e. cycle, operator, and the interaction explain significant amount of variation in dye score. 
+
+```{r}
+
+mod = lm(Obs ~ cycle_times + operator + cycle_times * operator, data = Obs_w_names)
+# mod = lm(cycle_times * operator, data = Obs_w_names) runs the same regression 
+# just having the interaction term is fine. R automatically knows it to expand the formula into main and interaction effects. 
+
+summary(mod)
+print(anova(mod))
+
+```
+
+
+### d) Check for interaction effect 
+Use anova() to test whether there is any interaction effect.
+
+We have visually checked for interaction effect in part (a), but we go over a more quantitative way here. Idea is to compare two nested models -- one with the interaction and the other without the interaction effect and test which model explains significantly more variation than the other.  The nested model contains only the main effects: 
+$$
+Y = \beta_0 + \beta_{C_2} C_2 + \beta_{C_3} C_3 + \beta_{O_3} O_2 + \beta_{O_3} O_3 + \varepsilon \;\; \text{... mod_0}
+$$
+For each model we obtain the F value, which measures how much variation is explained by the model with respect to degrees of freedom. For model0, F value is 5.8 and for the model with interactions, F value is 17. We conduct ANOVA to assess if the increase in the F value is significant. The result indicates that the increase is significant, suggesting that the model with the interaction effect explains significantly more variation compared to the model without any interaction. 
+
+```{r}
+
+# Run two regression models, one with interaction and the other without 
+mod = lm(Obs ~ cycle_times * operator, data = Obs_w_names)
+mod_0 = lm(Obs ~ cycle_times + operator, data = Obs_w_names)
+
+# Look at F statistic in each 
+summary(mod)
+summary(mod_0)
+
+# Anova helps us assess if the increase in sum of squares is significant 
+anova(mod_0, mod, test='F')
+
+```
+
+
+### e) Tukey multiple Pairwise Comparisons 
+Perform Tukey multiple pairwise-comparisons for the variable operator. From the simultaneous CIs, can you see which operator had the best score?
+
+```{r}
+
+res.aov = aov(Obs ~ cycle_times * operator, data = Obs_w_names)
+posthoc = TukeyHSD(x=res.aov, which = 'operator',  conf.level=0.95)
+plot(posthoc) 
+# operator 2 seems to have the best score 
+
+```
+
+
+
+
+

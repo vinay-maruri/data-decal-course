@@ -1,0 +1,236 @@
+---
+title: "stat135_hw7"
+author: "Vinay Maruri"
+date: "8/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Problem 1#
+
+```{r}
+chick_data = read.delim2("C:/Users/EndlessWormhole/Desktop/stat_135/chicks.txt", header = TRUE, sep = " ", dec = ".")
+```
+
+```{r}
+#little bit of data processing. no change to underlying data.
+chick_data = data.frame(cbind(chick_data$X.2, chick_data$X.6, chick_data$X.11, chick_data$cw))
+colnames(chick_data) = c("el", "eb", "ew", "cw")
+```
+
+```{r}
+#part (1)
+mean_el = mean(chick_data$el)
+mean_cw = mean(chick_data$cw)
+sd_el = sd(chick_data$el)
+sd_cw = sd(chick_data$cw)
+correlation_el_cw = cor(chick_data$el, chick_data$cw)
+mean_el
+mean_cw
+sd_el
+sd_cw
+correlation_el_cw
+```
+
+```{r}
+#part (1)
+beta_1 = {cov(chick_data$cw, chick_data$el)}/{var(chick_data$el)}
+beta_0 = {sum(chick_data$cw)*sum(chick_data$el^2) - sum(chick_data$el)*sum(chick_data$el*chick_data$cw)}/{length(chick_data$el)*sum(chick_data$el^2) - sum(chick_data$el)^2}
+beta_0
+beta_1
+```
+
+```{r}
+#part (1)
+#a is the intercept, b is the slope. The red line in the graph is the regression line. The scatter plot are just raw values for egg length and chick weight in this dataset.
+plot(chick_data$el, chick_data$cw)
+abline(a=beta_0, b=beta_1, col = "red")
+```
+
+
+```{r}
+#part (2)
+fit <- lm(cw ~ el, data = chick_data)
+```
+
+```{r}
+#part (2)
+summary(fit)
+```
+
+
+```{r}
+#part (2)
+#residual plot
+plot(fit$fitted.values, fit$residuals, xlab = 'Fitted Values', ylab = 'Residuals', main = 'Residuals vs Fitted, Problem 1')
+abline(h=0, lty=3)
+```
+
+```{r}
+#part (2)
+#normal QQ plot
+qqnorm(fit$residuals, main = 'Normal Q-Q Plot')
+qqline(fit$residuals, lty=2, col='gray')
+```
+
+```{r}
+#part (3)
+summary(fit)
+```
+
+#problem 2#
+```{r}
+#part (1)
+fit2 = lm(formula= cw ~ ew, data = chick_data)
+#first, construct y_hat using lecture 19, theorem e formula.
+y_hat = fit2$coefficients[1] + (fit2$coefficients[2]*8.5)
+#residual standard error from question 1, part (3) is 0.2207, with 42 degrees of freedom.
+variance_residuals = sqrt(sum(fit2$residuals^2)/42)
+#constructing se(y_hat)
+se_regression_line = sqrt({(1/44) + {8.5 - mean(chick_data$ew)}/{sum((chick_data$ew - mean(chick_data$ew))^2)}}*variance_residuals)
+#lower and upper ends of confidence interval.
+end_1 = y_hat - {qt(0.025, 42) * se_regression_line}
+end_2 = y_hat + {qt(0.025, 42) * se_regression_line}
+y_hat 
+se_regression_line
+end_1
+end_2
+```
+
+```{r}
+#part (2)
+#revised standard error formula for prediction intervals.
+new_se_prediction_interval = sqrt({1 + (1/44) + {8.5 - mean(chick_data$ew)}/{sum((chick_data$ew - mean(chick_data$ew))^2)}}*variance_residuals)
+#lower and upper ends of the prediction interval.
+prediction_end_1 = y_hat - {qt(0.025, 42) * new_se_prediction_interval}
+prediction_end_2 = y_hat + {qt(0.025, 42) * new_se_prediction_interval}
+y_hat
+new_se_prediction_interval
+prediction_end_1
+prediction_end_2
+```
+
+```{r}
+#part (3)
+#first confidence intervals.
+y_hat_2 = fit2$coefficients[1] + (fit2$coefficients[2]*12)
+#constructing se(y_hat)
+se_regression_line = sqrt({(1/44) + {12 - mean(chick_data$ew)}/{sum((chick_data$ew - mean(chick_data$ew))^2)}}*variance_residuals)
+#lower and upper ends of confidence interval.
+part_3_end_1 = y_hat_2 - {qt(0.025, 42) * se_regression_line}
+part_3_end_2 = y_hat_2 + {qt(0.025, 42) * se_regression_line}
+y_hat_2
+se_regression_line
+part_3_end_1
+part_3_end_2
+```
+
+```{r}
+#part (3)
+#second, prediction intervals.
+part_3_se_prediction_interval = sqrt({1 + (1/44) + {12 - mean(chick_data$ew)}/{sum((chick_data$ew - mean(chick_data$ew))^2)}}*variance_residuals)
+#lower and upper ends of the prediction interval.
+prediction_end_1 = y_hat_2 - {qt(0.025, 42) * part_3_se_prediction_interval}
+prediction_end_2 = y_hat_2 + {qt(0.025, 42) * part_3_se_prediction_interval}
+y_hat_2
+part_3_se_prediction_interval
+prediction_end_1
+prediction_end_2
+```
+
+```{r}
+#part (3)
+max(chick_data$ew)
+```
+
+
+#problem (3)#
+
+```{r}
+#part (1)
+fit3 = lm(cw ~ el + eb, data = chick_data)
+summary(fit3)
+#Both coefficients are individually and jointly highly statistically significant in predicting chick weight. Yes, the problem (2) regression of chick weight on egg weight is better than the regression in (1) and the regression in this problem, because it has a higher r^2 than both, lower residual standard error, and a higher F-statistic than both. This implies that the problem (2) model has more statistical power in predicting chick weight than either of the 2 other models. 
+```
+
+```{r}
+#part (1)
+summary(fit2)
+```
+
+
+```{r}
+#part (1)
+#residual plot
+plot(fit3$fitted.values, fit3$residuals, xlab = 'Fitted Values', ylab = 'Residuals', main = 'Residuals vs Fitted, Problem 3')
+abline(h=0, lty=3)
+#Yes, there are heteroscedastic errors. 
+
+```
+
+
+```{r}
+#part (2)
+fit4 = lm(ew ~ el + eb, data = chick_data)
+summary(fit4)
+#Regression model predicts egg weight well, as evidenced by the R^2 of 0.9506. Further, all coefficients are highly statistically significant, as evidenced by the individual t-test and overall F-test results. This implies that egg length and egg breadth have a high amount of statistical power in predicting egg weight both individually and jointly.
+```
+
+```{r}
+#part (2)
+library(car)
+vif(fit4)
+```
+
+```{r}
+#part (3)
+fit5 = lm(cw ~ el + eb + ew, data = chick_data)
+summary(fit5)
+#Reconciling the result: The F test is comparing your model against a model with no regressors. Specifically, the null hypothesis is all beta's = 0, the alternative hypothesis is that for at least one value of j, beta_j != 0. Another way of saying this is that the null hypothesis is an intercept-only model, whereas the alternative hypothesis is a model with at least one regressor. Thus, the result of the F-test can be interpreted to say that there is enough evidence to suggest that it is likely that the model specified here has at least one non-zero beta_j; and that it is likely that the model has at least one regressor [rejecting the intercept only model]. However, in this case, none of the coefficients are statistically significant [fail to reject null hypothesis that they equal zero] as evidenced by the t-test results. This means that while all of the coefficients don't equal zero [the F-test result], they individually can't be found to be non-zero [the t-test results]. Hence, this regression is not as impressive since none of the regressors' coefficients are statistically significant [can't be proven to be non-zero], whereas all 3 of the regressions in (1) have a statistically significiant coefficient on a regressor [proven to be likely non-zero]. 
+```
+```{r}
+#part (3)
+vif(fit5)
+```
+
+```{r}
+#part (4)
+library(olsrr)
+```
+
+```{r}
+model = lm(cw ~ el + eb + ew, data = chick_data)
+all_regs = ols_step_all_possible(model)
+```
+
+```{r}
+all_regs
+```
+
+```{r}
+plot(all_regs)
+```
+
+```{r}
+summary(lm(cw ~ eb + ew, data = chick_data))
+```
+
+```{r}
+summary(lm(cw ~ el + ew, data = chick_data))
+```
+
+```{r}
+summary(lm(cw ~ ew, data = chick_data))
+```
+
+
+
+```{r}
+#I can say that egg weight one variable regression, el eb two variable regression is also good.
+#reason 1: high r-squared
+#reason 2: all coefficients are statistically significant, as confirmed by individual t-tests and overall F-test
+```
+

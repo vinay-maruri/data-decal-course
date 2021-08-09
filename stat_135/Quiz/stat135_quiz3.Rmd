@@ -1,0 +1,56 @@
+---
+title: "quiz_3"
+author: "Vinay Maruri"
+date: "7/29/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##problem 1##
+```{r}
+#This block of code computes the expected values.
+observed_problem_ <- matrix(c(18, 12, 6, 3, 36, 36, 9, 9, 21, 45, 9, 9, 9, 36, 3, 6, 6, 21, 3, 3), ncol=5)
+row_sum_problem_ = rowSums(observed_problem_)
+col_sum_problem_ = colSums(observed_problem_)
+I = length(row_sum_problem_)
+J = length(col_sum_problem_)
+expected_problem_ <- matrix(NA, nrow=I, ncol=J)
+for(i in 1:I){
+  for(j in 1:J){
+    expected_problem_[i,j] = row_sum_problem_[i]*col_sum_problem_[j]/sum(row_sum_problem_)
+  }
+}
+expected_problem_
+```
+
+```{r}
+#compute the left hand side of the rejection region [-2log_lambda(x_n)]
+#which simplifies to sum of (obs - exp)^2/exp
+lhs = sum((observed_problem_-expected_problem_)^2/expected_problem_)
+lhs
+```
+
+```{r}
+alpha = 0.05
+#degrees of freedom is (#groups - 1)(#levels - 1)
+dfs = (I-1)*(J-1)
+dfs
+```
+
+
+```{r}
+#compute the relevant chi-squared statistic
+qchisq(alpha, df=dfs, lower.tail=F)
+```
+
+
+
+```{r}
+#compute p-value to gauge the likelihood of seeing a left hand side statistic [likelihood ratio] as extreme or more extreme.
+pchisq(lhs, df=dfs, lower.tail=F)
+```
+
+

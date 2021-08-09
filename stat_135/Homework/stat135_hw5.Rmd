@@ -1,0 +1,153 @@
+---
+title: "Stat135 HW5"
+author: "Vinay Maruri"
+date: "7/26/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Problem 1##
+
+```{r}
+#Load in the samples.
+control = c(41.0, 38.4, 24.9, 25.9, 21.9, 18.3, 13.1, 27.3, 28.5, − 16.9, 17.4, 21.8, 15.4, 27.4, 19.2, 22.4, 17.7, 26.0, 29.4, 21.4, 22.7, 26.0, 26.6)
+ozone = c(10.1, 6.1, 20.4, 7.3, 14.3, 15.5, −9.9, 6.8, 28.2, 17.9, −12.9, 14.0, 6.6, 12.1, 15.7, 39.9, −15.9, 54.6,− 14.7, 44.1, −9.0, −9.0)
+```
+
+```{r}
+#compute needed statistics.
+n = length(control)
+m = length(ozone)
+sample_mean_control = mean(control)
+sample_mean_ozone = mean(ozone)
+alpha = 0.05
+df = n + m - 2
+s_p = sqrt((sum((control - sample_mean_control)^2) + sum((ozone - sample_mean_ozone)^2))/df)
+```
+
+```{r}
+#sample t-statistic critical value
+qt(0.025, df, lower.tail = F)
+```
+
+```{r}
+#LHS of the rejection region.
+abs(sample_mean_control - sample_mean_ozone)/(s_p*sqrt(1/n + 1/m))
+```
+
+```{r}
+#second normal assumption hypothesis test.
+qt(0.05, df, lower.tail = F)
+```
+
+```{r}
+#second normal assumption hypothesis test.
+(sample_mean_control - sample_mean_ozone)/(s_p*sqrt(1/n + 1/m))
+```
+
+
+```{r}
+#mann-whitney test
+wilcox.test(control, ozone)
+```
+
+##Problem 2##
+
+```{r}
+#read in data.
+cereal_data = read.delim2("C:/Users/EndlessWormhole/Desktop/stat_135/oatbran.txt", header = TRUE, sep = " ", dec = ".")
+```
+
+```{r}
+d_n = 1/14 * sum(cereal_data$CORNFLK - cereal_data$OATBRAN)
+d_n
+```
+
+```{r}
+s_d_2 = 1/13 * sum(((cereal_data$CORNFLK - cereal_data$OATBRAN) - d_n)^2)
+s_d_2
+```
+
+```{r}
+qt(0.05, df=13, lower.tail=T)
+```
+
+```{r}
+d_n/sqrt(1/14 * s_d_2)
+```
+
+```{r}
+pt(3.344, 13, lower.tail = T)
+```
+
+```{r}
+#doing wilcoxon test by hand.....
+cereal_data$CORNFLK - cereal_data$OATBRAN
+```
+
+```{r}
+#part (3).
+wilcox.test(cereal_data$CORNFLK, cereal_data$OATBRAN, paired=T, alternative = 'less')
+```
+
+##problem 3##
+```{r}
+qchisq(0.05, df=7, lower.tail=F)
+```
+
+##problem 4##
+```{r}
+observed = matrix(c(1013, 538, 480, 67, 1597, 321, 170, 15), ncol=2)
+row_sum = rowSums(observed)
+col_sum = colSums(observed)
+
+expected <- matrix(NA, nrow=length(row_sum), ncol=length(col_sum))
+for(i in 1:length(row_sum)){
+  for(j in 1:length(col_sum)){
+    expected[i,j] = row_sum[i]*col_sum[j]/sum(row_sum)
+  }
+}
+expected
+```
+
+```{r}
+sum((observed-expected)^2/expected)
+```
+
+```{r}
+qchisq(0.05, df=3, lower.tail=F)
+```
+
+```{r}
+pchisq(366.3075, df=3, lower.tail=F)
+```
+
+##problem 5##
+```{r}
+observed_problem_5 <- matrix(c(60, 40, 54, 44, 46, 53, 41, 57), ncol=4)
+row_sum_problem_5 = rowSums(observed_problem_5)
+col_sum_problem_5 = colSums(observed_problem_5)
+
+expected_problem_5 <- matrix(NA, nrow=length(row_sum_problem_5), ncol=length(col_sum_problem_5))
+for(i in 1:length(row_sum_problem_5)){
+  for(j in 1:length(col_sum_problem_5)){
+    expected_problem_5[i,j] = row_sum_problem_5[i]*col_sum_problem_5[j]/sum(row_sum_problem_5)
+  }
+}
+expected_problem_5
+```
+
+```{r}
+sum((observed_problem_5-expected_problem_5)^2/expected_problem_5)
+```
+
+```{r}
+qchisq(0.05, df=3, lower.tail=F)
+```
+```{r}
+pchisq(8.006066, df=3, lower.tail=F)
+```
+
